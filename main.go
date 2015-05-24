@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"regexp"
 	)
 
 func main() {
@@ -18,7 +19,13 @@ func main() {
 
 	scanner := bufio.NewScanner(file)
 
+	r, _ := regexp.Compile("https?://(www.)?[a-zA-Z0-9.]{2,512}.[a-z]{2,10}")
+
 	for scanner.Scan() {
-		fmt.Println(scanner.Text())
+		line := scanner.Text()
+
+		if r.MatchString(line) {
+			fmt.Println("Valid: " + line)
+		}
 	}
 }
