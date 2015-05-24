@@ -1,0 +1,8 @@
+#
+# The crawler will use these URLs to download webcontent
+# Put every URL on a new line
+
+https://github.com/
+http://www.tmz.com
+# http://www.nu.nl
+http://m.ad.nl/
