@@ -8,8 +8,11 @@ import (
 	"net/http"
 	"io/ioutil"
 	"strings"
-	)
+)
 
+
+const Conf string = "gocraw.conf"
+var p = fmt.Println
 
 func check(e error) {
 	if e != nil {
@@ -55,22 +58,28 @@ func Makefilename(URL string) string {
 }
 
 func HandleRequest(req string) {
-	fmt.Println("Request: " + req)
+	p("Request: " + req)
 	html := Webrequest(req)
 	OutName := Makefilename(req) + ".txt"
 	SaveFile(OutName, html)
 }
 
-func main() {
-	file, err := os.Open("gocraw.conf")
+func OpenConfig() *os.File {
+	file, err := os.Open(Conf)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		panic(err)
 	}
-	defer file.Close()
 
-	scanner := bufio.NewScanner(file)
+	return file
+}
+
+func main() {
+	conf := OpenConfig()
+	defer conf.Close()
+
+	scanner := bufio.NewScanner(conf)
 	r, _ := regexp.Compile("^https?://(www.)?[a-zA-Z0-9.]{2,512}.[a-z]{2,10}/?$")
+
 	for scanner.Scan() {
 		line := scanner.Text()
 
@@ -87,7 +96,7 @@ func main() {
 		}
 	}
 
+	fmt.Println("Press Enter")
 	var input string
 	fmt.Scanln(&input)
-	fmt.Println("Done")
 }
