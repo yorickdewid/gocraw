@@ -55,7 +55,7 @@ func Makefilename(URL string) string {
 }
 
 func main() {
-	file, err := os.Open("targetlist.txt")
+	file, err := os.Open("gocraw.conf")
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -67,8 +67,16 @@ func main() {
 	for scanner.Scan() {
 		line := scanner.Text()
 
+		if len(line) == 0 {
+			continue
+		}
+
+		if line[0:1] == "#" {
+			continue
+		}
+
 		if r.MatchString(line) {
-			fmt.Println("Valid: " + line)
+			fmt.Println("Request: " + line)
 			html := Webrequest(line)
 			OutName := Makefilename(line) + ".txt"
 			SaveFile(OutName, html)
