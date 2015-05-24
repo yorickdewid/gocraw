@@ -54,6 +54,13 @@ func Makefilename(URL string) string {
 	return strings.Replace(URL, ".", "_", -1)
 }
 
+func HandleRequest(req string) {
+	fmt.Println("Request: " + req)
+	html := Webrequest(req)
+	OutName := Makefilename(req) + ".txt"
+	SaveFile(OutName, html)
+}
+
 func main() {
 	file, err := os.Open("gocraw.conf")
 	if err != nil {
@@ -76,10 +83,11 @@ func main() {
 		}
 
 		if r.MatchString(line) {
-			fmt.Println("Request: " + line)
-			html := Webrequest(line)
-			OutName := Makefilename(line) + ".txt"
-			SaveFile(OutName, html)
+			go HandleRequest(line)
 		}
 	}
+
+	var input string
+	fmt.Scanln(&input)
+	fmt.Println("Done")
 }
