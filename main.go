@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"strings"
 	"flag"
+	"sync"
 )
 
 
@@ -57,7 +58,8 @@ func Makefilename(URL string) string {
 	return strings.Replace(URL, ".", "_", -1)
 }
 
-func HandleRequest(req string) {
+func HandleRequest(wg *sync.WaitGroup, req string) {
+	defer wg.Done()
 	p("Request: " + req)
 	html := Webrequest(req)
 	OutName := Makefilename(req) + ".txt"
@@ -87,12 +89,12 @@ func main() {
 	r, _ := regexp.Compile("^https?://(www.)?[a-zA-Z0-9.]{2,512}.[a-z]{2,10}/?$")
 
 	if *filename != "filename" {
+		var wg sync.WaitGroup
 		conf := OpenConfig(*filename)
 
 		defer conf.Close()
 
 		scanner := bufio.NewScanner(conf)
-
 		for scanner.Scan() {
 			line := scanner.Text()
 
@@ -105,19 +107,21 @@ func main() {
 			}
 
 			if r.MatchString(line) {
-				go HandleRequest(line)
+				wg.Add(1)
+				go HandleRequest(&wg, line)
 			}
 		}
+		wg.Wait()
 	} else {
-		if r.MatchString(os.Args[1:][0]) {
-			go HandleRequest(os.Args[1:][0])
+		Url := os.Args[1:][0]
+		if r.MatchString(Url) {
+			p("Request: " + Url)
+			html := Webrequest(Url)
+			OutName := Makefilename(Url) + ".txt"
+			SaveFile(OutName, html)
 		} else {
 			p("Not a valid URL")
 			os.Exit(0)
 		}
 	}
-
-	fmt.Println("Press Enter")
-	var input string
-	fmt.Scanln(&input)
 }
