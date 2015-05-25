@@ -8,10 +8,10 @@ import (
 	"net/http"
 	"io/ioutil"
 	"strings"
+	"flag"
 )
 
 
-const Conf string = "gocraw.conf"
 var p = fmt.Println
 
 func check(e error) {
@@ -64,8 +64,8 @@ func HandleRequest(req string) {
 	SaveFile(OutName, html)
 }
 
-func OpenConfig() *os.File {
-	file, err := os.Open(Conf)
+func OpenConfig(File string) *os.File {
+	file, err := os.Open(File)
 	if err != nil {
 		panic(err)
 	}
@@ -74,25 +74,46 @@ func OpenConfig() *os.File {
 }
 
 func main() {
-	conf := OpenConfig()
-	defer conf.Close()
 
-	scanner := bufio.NewScanner(conf)
+	if len(os.Args) < 2 {
+		p("Missing input")
+		os.Exit(1)
+	}
+
+	filename := flag.String("file", "filename", "Read targets from config file")
+
+	flag.Parse()
+
 	r, _ := regexp.Compile("^https?://(www.)?[a-zA-Z0-9.]{2,512}.[a-z]{2,10}/?$")
 
-	for scanner.Scan() {
-		line := scanner.Text()
+	if *filename != "filename" {
+		conf := OpenConfig(*filename)
 
-		if len(line) == 0 {
-			continue
+		defer conf.Close()
+
+		scanner := bufio.NewScanner(conf)
+
+		for scanner.Scan() {
+			line := scanner.Text()
+
+			if len(line) == 0 {
+				continue
+			}
+
+			if line[0:1] == "#" {
+				continue
+			}
+
+			if r.MatchString(line) {
+				go HandleRequest(line)
+			}
 		}
-
-		if line[0:1] == "#" {
-			continue
-		}
-
-		if r.MatchString(line) {
-			go HandleRequest(line)
+	} else {
+		if r.MatchString(os.Args[1:][0]) {
+			go HandleRequest(os.Args[1:][0])
+		} else {
+			p("Not a valid URL")
+			os.Exit(0)
 		}
 	}
 
