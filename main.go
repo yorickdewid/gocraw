@@ -10,6 +10,7 @@ import (
 	"strings"
 	"flag"
 	"sync"
+	"github.com/moovweb/gokogiri"
 )
 
 
@@ -62,6 +63,16 @@ func HandleRequest(wg *sync.WaitGroup, req string) {
 	defer wg.Done()
 	p("Request: " + req)
 	html := Webrequest(req)
+
+	doc, _ := gokogiri.ParseHtml([]byte(html))
+	defer doc.Free()
+
+	n, err := doc.Root().Search(`//title`)
+	if err != nil {
+		panic(err)
+	}
+	p("Title: " +n[0].Content())
+
 	OutName := Makefilename(req) + ".txt"
 	SaveFile(OutName, html)
 }
