@@ -26,13 +26,13 @@ func check(e error) {
 func Webrequest(url string) string {
 	resp, err := http.Get(url)
 	if err != nil {
-		fmt.Println(err)
+		p(err)
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println(err)
+		p(err)
 	}
 
 	return string(body)
