@@ -10,6 +10,7 @@ import (
 	"strings"
 	"flag"
 	"sync"
+	"errors"
 	"github.com/moovweb/gokogiri"
 )
 
@@ -19,39 +20,42 @@ const UserAgent string = "Gocraw v1.0"
 
 func check(e error) {
 	if e != nil {
-    	panic(e)
+    	p(e)
 	}
 }
 
 // Request webcontent from url
-func Webrequest(url string) string {
+func Webrequest(url string) (string, error) {
 	client := &http.Client{}
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		p(err)
+		return "", errors.New("Creating request failed")
 	}
 
 	req.Header.Set("User-Agent", UserAgent)
 	resp, err := client.Do(req)
 	if err != nil {
 		p(err)
+		return "", errors.New("Request failed")
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		p(err)
+		return "", errors.New("Reading response failed")
 	}
 
-	return string(body)
+	return string(body), nil
 }
 
 // Write content to file
 func SaveFile(File string, ctx string) {
 	d1 := []byte(ctx)
-	err := ioutil.WriteFile(File, d1, 0644)
-	check(err)
+	 ioutil.WriteFile(File, d1, 0644)
+	//check(err)
 }
 
 // Substract name from URL
@@ -71,16 +75,26 @@ func Makefilename(URL string) string {
 func HandleRequest(wg *sync.WaitGroup, req string) {
 	defer wg.Done()
 	p("Request: " + req)
-	html := Webrequest(req)
+	html, err := Webrequest(req)
+	if err != nil {
+		p(err)
+		return
+	}
 
-	doc, _ := gokogiri.ParseHtml([]byte(html))
+	doc, err := gokogiri.ParseHtml([]byte(html))
+	if err != nil {
+		return
+	}
 	defer doc.Free()
 
 	n, err := doc.Root().Search(`//title`)
 	if err != nil {
-		panic(err)
+		p(err)
+		return
 	}
-	p("Title: " +n[0].Content())
+	if len(n)>0 {
+		p("Title: " +n[0].Content())
+	}
 
 	OutName := Makefilename(req) + ".txt"
 	SaveFile(OutName, html)
@@ -136,7 +150,21 @@ func main() {
 		Url := os.Args[1:][0]
 		if r.MatchString(Url) {
 			p("Request: " + Url)
-			html := Webrequest(Url)
+			html, err := Webrequest(Url)
+			if err != nil {
+				p(err)
+				os.Exit(1)
+			}
+
+			doc, _ := gokogiri.ParseHtml([]byte(html))
+			defer doc.Free()
+
+			n, err := doc.Root().Search(`//title`)
+			if err != nil {
+				p(err)
+			}
+			p("Title: " +n[0].Content())
+
 			OutName := Makefilename(Url) + ".txt"
 			SaveFile(OutName, html)
 		} else {
