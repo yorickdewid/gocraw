@@ -15,6 +15,7 @@ import (
 
 
 var p = fmt.Println
+const UserAgent string = "Gocraw v1.0"
 
 func check(e error) {
 	if e != nil {
@@ -24,7 +25,15 @@ func check(e error) {
 
 // Request webcontent from url
 func Webrequest(url string) string {
-	resp, err := http.Get(url)
+	client := &http.Client{}
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		p(err)
+	}
+
+	req.Header.Set("User-Agent", UserAgent)
+	resp, err := client.Do(req)
 	if err != nil {
 		p(err)
 	}
